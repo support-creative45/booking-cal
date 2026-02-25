@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>予約カレンダー Original+ Story</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Alex+Brush&family=Allura&family=Great+Vibes&family=Pinyon+Script&family=Hina+Mincho&family=Shippori+Mincho&family=Noto+Serif+JP&family=Kiwi+Maru&family=Zen+Maru+Gothic&family=Noto+Sans+JP&display=swap" rel="stylesheet">
+  
+  <style>
+    /* --- カラーテーマ定義 --- */
+    :root {
+      --bg-color: #f4f4f9; 
+      --theme-main: #d49a9a; --theme-sub: #e8d5d5; --theme-text: #666666; --theme-muted: #bbbbbb; --theme-canvas: #ffffff;
+    }
+    .theme-terracotta { --theme-main: #b05b45; --theme-sub: #dfc8c3; --theme-text: #5c3a32; --theme-muted: #c4b5b1; --theme-canvas: #fffbf9; }
+    .theme-greige     { --theme-main: #948c85; --theme-sub: #d6d3d0; --theme-text: #595552; --theme-muted: #c2beba; --theme-canvas: #fafafa; }
+    .theme-milktea    { --theme-main: #c49a70; --theme-sub: #e8dbce; --theme-text: #6b5540; --theme-muted: #d1c8bd; --theme-canvas: #fffdfa; }
+    .theme-ashblue    { --theme-main: #6c8c99; --theme-sub: #cdd8db; --theme-text: #3d5259; --theme-muted: #b8c7cc; --theme-canvas: #f7fbfc; }
+    .theme-monochrome { --theme-main: #444444; --theme-sub: #cccccc; --theme-text: #222222; --theme-muted: #aaaaaa; --theme-canvas: #ffffff; }
+    .theme-dustyrose  { --theme-main: #b57a8a; --theme-sub: #e2cdd3; --theme-text: #66434d; --theme-muted: #cbb4bc; --theme-canvas: #fcf8f9; }
+    .theme-pistachio  { --theme-main: #8c9e78; --theme-sub: #ccd6c3; --theme-text: #4a573c; --theme-muted: #c0c9b8; --theme-canvas: #f9fbf8; }
+    .theme-mimosa     { --theme-main: #cfa859; --theme-sub: #ebdcc0; --theme-text: #6b5528; --theme-muted: #d9ceb6; --theme-canvas: #fdfcf9; }
+    .theme-lilac      { --theme-main: #a393b3; --theme-sub: #d6cfdc; --theme-text: #53485e; --theme-muted: #c9c1d1; --theme-canvas: #fbfafc; }
+    .theme-midnight   { --theme-main: #4a5c75; --theme-sub: #c3cad1; --theme-text: #2a3545; --theme-muted: #abb5c2; --theme-canvas: #f4f6f9; }
+
+    body { font-family: sans-serif; text-align: center; background: var(--bg-color); margin: 0; padding: 10px; color: #444; }
+    .controls-group { background: #fff; padding: 12px; border-radius: 8px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); text-align: left; border-top: 4px solid #e0e0e0; }
+    .controls-group h3 { margin: 0 0 10px 0; font-size: 0.9rem; color: #333; }
+    
+    details.design { border-top-color: #d49a9a; }
+    details.design summary { font-size: 0.9rem; font-weight: bold; color: #333; cursor: pointer; list-style: none; outline: none; padding: 4px 0; }
+    details.design summary::before { content: "▶︎ "; color: #d49a9a; font-size: 0.8rem; display: inline-block; transition: 0.2s; }
+    details.design[open] summary::before { transform: rotate(90deg); }
+    .details-content { margin-top: 10px; padding-top: 10px; border-top: 1px dashed #eee; }
+
+    .input-row { display: flex; gap: 10px; margin-bottom: 10px; align-items: center; }
+    .input-col { flex: 1; min-width: 0; }
+    p.label { margin: 0 0 4px 0; font-size: 0.75rem; font-weight: bold; color: #777; }
+    input, select { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 0.85rem; width: 100%; box-sizing: border-box; background: #fff; }
+    
+    input[type="file"] { font-size: 0.7rem; padding: 5px; }
+
+    .radio-group { display: flex; gap: 15px; align-items: center; background: #f9f9f9; padding: 8px 15px; border-radius: 4px; border: 1px solid #ccc; }
+    .radio-group label { display: flex; align-items: center; gap: 5px; cursor: pointer; font-size: 0.85rem; white-space: nowrap; }
+    .radio-group input[type="radio"] { width: auto !important; margin: 0; cursor: pointer; }
+
+    .time-selector { display: flex; align-items: center; gap: 5px; margin-bottom: 5px; }
+    .time-selector select { padding: 4px; font-size: 0.8rem; width: auto; }
+    .time-label { font-size: 0.75rem; color: #888; width: 40px; font-weight: bold; }
+
+    .palette { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; padding: 10px; background: #f9f9f9; border-radius: 8px; justify-content: center; }
+    .tool-btn { padding: 8px 12px; font-size: 0.8rem; border: 2px solid transparent; border-radius: 20px; background: #fff; color: #555; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    .tool-btn.active { border: 2px solid var(--theme-main); background: var(--theme-main); color: #fff; font-weight: bold; transform: scale(1.05); }
+
+    /* --- 画像エリア --- */
+    #capture-area { position: relative; width: 340px; height: 340px; margin: 0 auto 15px auto; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.05); transition: height 0.3s ease; }
+    #capture-area.ratio-story { height: 604px; }
+    
+    #bg-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-size: cover; background-position: center; display: none; z-index: 1; }
+    #overlay-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: var(--theme-canvas); z-index: 2; transition: opacity 0.3s; }
+    
+    #content-layer { position: relative; z-index: 3; padding: 12px; display: flex; flex-direction: column; height: 100%; box-sizing: border-box; justify-content: center; align-items: center; }
+
+    #calendar-wrapper { width: 316px; flex-grow: 0; display: flex; flex-direction: column; pointer-events: auto; }
+    
+    #salon-name-display { font-size: 1.4rem; color: var(--theme-text); text-align: left; margin-bottom: 0px; line-height: 1.2; }
+    #month-display { color: var(--theme-main); margin: 0 0 8px 0; font-size: 1.1rem; font-weight: bold; text-align: left; letter-spacing: 1px; }
+    
+    .grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); grid-template-rows: 18px repeat(6, 1fr); gap: 2px; }
+    .day { display: flex; flex-direction: column; align-items: center; justify-content: flex-start; cursor: pointer; padding-top: 1px; height: 38px; background: transparent; box-sizing: border-box; }
+    .day-header { font-weight: bold; color: var(--theme-text); font-size: 0.65rem; border: none !important; align-items: center; justify-content: center; height: 18px; padding: 0; }
+    
+    .style-box .day { border: 1.5px solid var(--theme-sub); }
+    .style-borderless .day { border: none; }
+    .style-horizontal .day { border-top: 1.5px solid var(--theme-sub); border-bottom: 1.5px solid var(--theme-sub); border-left: none; border-right: none; border-radius: 0 !important; }
+    
+    .grid.has-bg.style-box .day { border-color: var(--theme-muted); }
+    .grid.has-bg.style-horizontal .day { border-top-color: var(--theme-muted); border-bottom-color: var(--theme-muted); }
+
+    .radius-sharp .day { border-radius: 0px; }
+    .radius-slight .day { border-radius: 4px; }
+    .radius-round .day { border-radius: 12px; }
+    
+    .date-num { font-weight: bold; color: var(--theme-text); font-size: 0.7rem; line-height: 1; margin-bottom: 0px; font-family: 'Noto Sans JP', sans-serif;}
+    .status-container { display: flex; flex-direction: column; align-items: center; justify-content: flex-start; width: 100%; height: 100%; padding: 0; margin: 0; }
+    
+    /* --- 時間スタンプ --- */
+    .status { 
+      font-family: 'Arial Narrow', sans-serif; 
+      font-size: 11px; 
+      color: var(--theme-main); 
+      font-weight: bold; 
+      white-space: nowrap; 
+      letter-spacing: -0.5px; 
+      transform: scaleX(0.72) scaleY(0.9); 
+      transform-origin: center top; 
+      line-height: 1; 
+      margin-bottom: -2.5px; 
+      width: 130%; 
+      margin-left: -15%;
+      text-align: center;
+    }
+
+    /* ★ 休・満スタンプ：バッジ画像化ズレ完全対策版 */
+    .status.short { 
+      transform: none !important; 
+      margin-left: 0 !important; 
+      
+      width: 80%; 
+      height: 16px; 
+      margin-top: 2px; 
+      
+      font-size: 10px; 
+      font-family: 'Noto Sans JP', sans-serif; 
+      letter-spacing: normal; 
+      border-radius: 3px;
+      
+      display: flex !important;
+      justify-content: center !important;
+      align-items: center !important;
+    }
+    
+    .status-close { background-color: #eeeeee; color: #777777 !important; }
+    .status-full { background-color: var(--theme-main); color: #ffffff !important; font-weight: bold; }
+    
+    .btn-download { padding: 12px 24px; background: #666; color: white; border: none; border-radius: 25px; font-size: 1rem; font-weight: bold; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.2); width: 80%; margin-bottom: 30px; }
+  </style>
+</head>
+<body class="theme-terracotta">
+
+  <div class="controls-group">
+    <h3>📅 スケジュール入力</h3>
+    <div class="input-row">
+      <div class="input-col"><p class="label">① サロン名</p><input type="text" id="salon-name-input" value="Nail Salon" oninput="updateDesign()"></div>
+      <div class="input-col"><p class="label">② 年月</p><input type="month" id="month-input" onchange="generateCalendar()"></div>
+    </div>
+
+    <div class="input-row">
+      <p class="label" style="margin: 0; width: 85px; flex-shrink: 0;">③ 画像比率</p>
+      <div class="radio-group">
+        <label><input type="radio" name="image-ratio" value="square" checked onchange="updateDesign()"> 正方形</label>
+        <label><input type="radio" name="image-ratio" value="story" onchange="updateDesign()"> ストーリー</label>
+      </div>
+    </div>
+    
+    <div class="time-selector">
+      <div class="time-label">午前</div>
+      <select id="s1-start" onchange="updatePaletteText(1)"></select><span>-</span><select id="s1-end" onchange="updatePaletteText(1)"></select>
+    </div>
+    <div class="time-selector">
+      <div class="time-label">午後</div>
+      <select id="s2-start" onchange="updatePaletteText(2)"></select><span>-</span><select id="s2-end" onchange="updatePaletteText(2)"></select>
+    </div>
+
+    <div class="palette" id="palette">
+      <button class="tool-btn active" onclick="selectTool('custom1')" id="btn-custom1">10:00-14:00</button>
+      <button class="tool-btn" onclick="selectTool('custom2')" id="btn-custom2">14:00-18:00</button>
+      <button class="tool-btn" onclick="selectTool('close')">休</button>
+      <button class="tool-btn" onclick="selectTool('full')">満</button>
+      <button class="tool-btn" onclick="selectTool('clear')">クリア</button>
+      <button class="tool-btn" onclick="allClear()" style="background: #fdf2f2; border-color: #f8d7da; color: #dc3545; margin-left: 10px;">全消去</button>
+    </div>
+  </div>
+
+  <p class="hint" style="margin-bottom: 5px;">👇 カレンダーをタップしてスタンプ！</p>
+  
+  <div id="capture-area">
+    <div id="bg-layer"></div>
+    <div id="overlay-layer"></div>
+    <div id="content-layer">
+      <div id="calendar-wrapper">
+        <div id="salon-name-display">Nail Salon</div>
+        <div id="month-display">2026年 3月</div>
+        <div class="grid style-box radius-slight" id="calendar"></div>
+      </div>
+    </div>
+  </div>
+
+  <details class="controls-group design" open>
+    <summary>✨ デザイン設定</summary>
+    <div class="details-content">
+      
+      <div class="input-row">
+        <div class="input-col">
+          <p class="label">サロン名フォント</p>
+          <select id="font-select" onchange="updateDesign()">
+            <optgroup label="筆記体"><option value="'Great Vibes', cursive">Great Vibes</option><option value="'Alex Brush', cursive">Alex Brush</option><option value="'Allura', cursive">Allura</option><option value="'Pinyon Script', cursive">Pinyon Script</option></optgroup>
+            <optgroup label="明朝・ゴシック"><option value="'Shippori Mincho', serif">しっぽり明朝</option><option value="'Hina Mincho', serif">ひな明朝</option><option value="'Kiwi Maru', serif">キウイ丸</option><option value="'Zen Maru Gothic', sans-serif">丸ゴシック</option><option value="'Noto Serif JP', serif">標準明朝</option><option value="'Noto Sans JP', sans-serif">標準ゴシック</option></optgroup>
+          </select>
+        </div>
+        <div class="input-col">
+          <p class="label">サロン名カラー</p>
+          <select id="salon-name-color-select" onchange="updateDesign()">
+            <option value="theme-text">ダークグレー（標準）</option>
+            <option value="theme-main">メインカラー</option>
+            <option value="#333333">ブラック</option>
+            <option value="#6b5540">ブラウン</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="input-row">
+        <div class="input-col">
+          <p class="label">年月フォント</p>
+          <select id="month-font-select" onchange="updateDesign()">
+            <option value="'Noto Sans JP', sans-serif">標準ゴシック</option><option value="'Zen Maru Gothic', sans-serif">丸ゴシック</option><option value="'Shippori Mincho', serif">しっぽり明朝</option><option value="'Kiwi Maru', serif">キウイ丸</option><option value="'Hina Mincho', serif">ひな明朝</option><option value="'Noto Serif JP', serif">標準明朝</option><option value="'Great Vibes', cursive">筆記体</option>
+          </select>
+        </div>
+        <div class="input-col">
+          <p class="label">年月形式</p>
+          <select id="month-format-select" onchange="generateCalendar()">
+            <option value="ja">2026年 3月</option><option value="en">March 2026</option><option value="dot">2026.03</option><option value="slash">2026 / 03</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="input-row">
+        <div class="input-col">
+          <p class="label">カラーテーマ</p>
+          <select id="theme-select" onchange="updateDesign()">
+            <option value="theme-terracotta">🧱 テラコッタ</option><option value="theme-dustyrose">🥀 ダスティローズ</option><option value="">🌸 サクラピンク</option>
+            <option value="theme-pistachio">🌿 ピスタチオ</option><option value="theme-mimosa">🍋 ミモザイエロー</option><option value="theme-greige">🪨 グレージュ</option>
+            <option value="theme-milktea">☕ ミルクティー</option><option value="theme-ashblue">🌊 アッシュブルー</option><option value="theme-lilac">☂️ ライラック</option>
+            <option value="theme-midnight">🌌 ミッドナイト</option><option value="theme-monochrome">🎹 モノクロ</option>
+          </select>
+        </div>
+        <div class="input-col">
+          <p class="label">枠線</p>
+          <select id="grid-style" onchange="updateDesign()">
+            <option value="style-box">標準</option><option value="style-borderless">線なし</option><option value="style-horizontal">横線のみ</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="input-row">
+        <div class="input-col">
+          <p class="label">角の丸み</p>
+          <select id="radius-style" onchange="updateDesign()">
+            <option value="radius-slight">少し丸い</option><option value="radius-round">しっかり丸い</option><option value="radius-sharp">なし</option>
+          </select>
+        </div>
+        <div class="input-col">
+          <p class="label">背景写真</p>
+          <input type="file" id="bg-upload" accept="image/*" onchange="handleImageUpload(event)">
+        </div>
+      </div>
+    </div>
+  </details>
+
+  <button class="btn-download" onclick="downloadImage()">画像を保存する</button>
+
+  <script>
+    let currentTool = 'custom1';
+    
+    window.onload = () => {
+      loadSettings();
+      if(!document.getElementById('month-input').value) {
+        document.getElementById('month-input').value = new Date().toISOString().slice(0, 7);
+      }
+      generateTimeOptions(); 
+      generateCalendar(); 
+      updateDesign(false);
+    };
+
+    function saveSettings() {
+      const ratio = document.querySelector('input[name="image-ratio"]:checked').value;
+      const settings = {
+        salonName: document.getElementById('salon-name-input').value,
+        font: document.getElementById('font-select').value,
+        salonNameColor: document.getElementById('salon-name-color-select').value,
+        monthFont: document.getElementById('month-font-select').value,
+        monthFormat: document.getElementById('month-format-select').value,
+        theme: document.getElementById('theme-select').value,
+        grid: document.getElementById('grid-style').value,
+        radius: document.getElementById('radius-style').value,
+        ratio: ratio
+      };
+      localStorage.setItem('salon_note_settings_v24', JSON.stringify(settings));
+    }
+
+    function loadSettings() {
+      const saved = localStorage.getItem('salon_note_settings_v24');
+      if (!saved) return;
+      const s = JSON.parse(saved);
+      document.getElementById('salon-name-input').value = s.salonName !== undefined ? s.salonName : "Nail Salon";
+      document.getElementById('font-select').value = s.font || "'Great Vibes', cursive";
+      document.getElementById('salon-name-color-select').value = s.salonNameColor || "theme-text";
+      document.getElementById('month-font-select').value = s.monthFont || "'Noto Sans JP', sans-serif";
+      document.getElementById('month-format-select').value = s.monthFormat || "ja";
+      document.getElementById('theme-select').value = s.theme || "theme-terracotta";
+      document.getElementById('grid-style').value = s.grid || "style-box";
+      document.getElementById('radius-style').value = s.radius || "radius-slight";
+      if(s.ratio) {
+        const radio = document.querySelector(`input[name="image-ratio"][value="${s.ratio}"]`);
+        if(radio) radio.checked = true;
+      }
+    }
+
+    function generateTimeOptions() {
+      const times = []; for(let h=9; h<=21; h++) { times.push(`${h}:00`, `${h}:30`); }
+      const selects = ['s1-start', 's1-end', 's2-start', 's2-end'];
+      const defaults = ['10:00', '14:00', '14:00', '18:00']; 
+      selects.forEach((id, index) => { 
+        const el = document.getElementById(id); 
+        el.innerHTML = '';
+        times.forEach(t => { el.innerHTML += `<option value="${t}" ${t === defaults[index] ? 'selected' : ''}>${t}</option>`; }); 
+      });
+    }
+
+    function updateDesign(shouldSave = true) {
+      const ratio = document.querySelector('input[name="image-ratio"]:checked').value;
+      const area = document.getElementById('capture-area');
+      if(ratio === 'story') {
+        area.classList.add('ratio-story');
+      } else {
+        area.classList.remove('ratio-story');
+      }
+
+      const displayEl = document.getElementById('salon-name-display');
+      displayEl.innerText = document.getElementById('salon-name-input').value;
+      displayEl.style.fontFamily = document.getElementById('font-select').value;
+      
+      const nameColorVal = document.getElementById('salon-name-color-select').value;
+      if (nameColorVal === 'theme-main') {
+        displayEl.style.color = 'var(--theme-main)';
+      } else if (nameColorVal === 'theme-text') {
+        displayEl.style.color = 'var(--theme-text)';
+      } else {
+        displayEl.style.color = nameColorVal;
+      }
+
+      const monthDisplay = document.getElementById('month-display');
+      monthDisplay.style.fontFamily = document.getElementById('month-font-select').value;
+      document.body.className = document.getElementById('theme-select').value;
+      
+      const gridStyle = document.getElementById('grid-style').value;
+      const radiusStyle = document.getElementById('radius-style').value;
+      
+      const isBgSet = document.getElementById('bg-layer').style.display === 'block';
+      document.getElementById('calendar').className = `grid ${gridStyle} ${radiusStyle} ${isBgSet ? 'has-bg' : ''}`;
+      
+      if(shouldSave) saveSettings();
+    }
+
+    function handleImageUpload(event) {
+      const file = event.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const bgLayer = document.getElementById('bg-layer');
+          bgLayer.style.backgroundImage = `url(${e.target.result})`;
+          bgLayer.style.display = 'block';
+          document.getElementById('overlay-layer').style.opacity = '0.85'; 
+          updateDesign(false); 
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+
+    function updatePaletteText(num) {
+      const start = document.getElementById(`s${num}-start`).value;
+      const end = document.getElementById(`s${num}-end`).value;
+      const val = `${start}-${end}`;
+      document.getElementById(`btn-custom${num}`).innerText = val;
+      if(currentTool === `custom${num}`) selectTool(`custom${num}`);
+    }
+
+    function selectTool(toolName) {
+      currentTool = toolName;
+      document.querySelectorAll('.tool-btn').forEach(btn => btn.classList.remove('active'));
+      if(window.event && window.event.currentTarget && window.event.currentTarget.classList.contains('tool-btn')) {
+        window.event.currentTarget.classList.add('active');
+      } else {
+        const btnId = toolName.startsWith('custom') ? `btn-${toolName}` : '';
+        if(btnId) document.getElementById(btnId).classList.add('active');
+      }
+    }
+
+    function generateCalendar() {
+      const cal = document.getElementById('calendar');
+      cal.innerHTML = ''; 
+      const monthInput = document.getElementById('month-input').value;
+      if(!monthInput) return;
+      const [year, monthNumStr] = monthInput.split('-');
+      const monthInt = parseInt(monthNumStr);
+      const format = document.getElementById('month-format-select').value;
+      let displayStr = `${year}年 ${monthInt}月`;
+      if(format === 'en') {
+        const mNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+        displayStr = `${mNames[monthInt-1]} ${year}`;
+      } else if (format === 'dot') displayStr = `${year}.${monthNumStr}`;
+      else if (format === 'slash') displayStr = `${year} / ${monthNumStr}`;
+      document.getElementById('month-display').innerText = displayStr;
+      const daysOfWeek = ['日','月','火','水','木','金','土'];
+      daysOfWeek.forEach(d => cal.innerHTML += `<div class="day day-header">${d}</div>`);
+      const firstDay = new Date(year, monthInt - 1, 1).getDay();
+      const lastDate = new Date(year, monthInt, 0).getDate();
+      const storageKey = `salon_data_v23_${year}_${monthNumStr}`;
+      const savedData = JSON.parse(localStorage.getItem(storageKey)) || {};
+      for(let i=0; i<42; i++) {
+        const dateNum = i - firstDay + 1;
+        if(i < firstDay || i >= firstDay + lastDate) { 
+          cal.innerHTML += `<div class="day empty"></div>`; 
+        } else { 
+          let statusHtml = "";
+          if(savedData[dateNum]) {
+            savedData[dateNum].forEach(text => {
+              const isShort = (text === '休' || text === '満');
+              let exactClass = '';
+              if(text === '休') exactClass = 'status-close';
+              if(text === '満') exactClass = 'status-full';
+              statusHtml += `<span class="status ${isShort ? 'short' : ''} ${exactClass}">${text}</span>`;
+            });
+          }
+          cal.innerHTML += `<div class="day" onclick="applyTool(this, ${dateNum})"><span class="date-num">${dateNum}</span><div class="status-container">${statusHtml}</div></div>`; 
+        }
+      }
+      saveSettings();
+    }
+
+    function applyTool(el, dateNum) {
+      const monthInput = document.getElementById('month-input').value;
+      const [year, monthNumStr] = monthInput.split('-');
+      const storageKey = `salon_data_v23_${year}_${monthNumStr}`;
+      let savedData = JSON.parse(localStorage.getItem(storageKey)) || {};
+      const container = el.querySelector('.status-container');
+      let currentLines = savedData[dateNum] || [];
+      if (currentTool === 'custom1' || currentTool === 'custom2') {
+        let newTime = document.getElementById(`btn-${currentTool}`).innerText;
+        if (currentLines.length === 0 || currentLines[0] === '休' || currentLines[0] === '満') { currentLines = [newTime]; } 
+        else if (currentLines.length < 2 && !currentLines.includes(newTime)) { currentLines.push(newTime); }
+      } else if (currentTool === 'close') { currentLines = ['休']; } 
+      else if (currentTool === 'full') { currentLines = ['満']; } 
+      else if (currentTool === 'clear') { currentLines = []; } 
+      if(currentLines.length > 0) { savedData[dateNum] = currentLines; } else { delete savedData[dateNum]; }
+      localStorage.setItem(storageKey, JSON.stringify(savedData));
+      
+      let statusHtml = "";
+      currentLines.forEach(text => {
+        const isShort = (text === '休' || text === '満');
+        let exactClass = '';
+        if(text === '休') exactClass = 'status-close';
+        if(text === '満') exactClass = 'status-full';
+        statusHtml += `<span class="status ${isShort ? 'short' : ''} ${exactClass}">${text}</span>`;
+      });
+      container.innerHTML = statusHtml;
+    }
+
+    function allClear() {
+      const monthInput = document.getElementById('month-input').value;
+      if(!monthInput) return;
+      const [year, monthNumStr] = monthInput.split('-');
+      const storageKey = `salon_data_v23_${year}_${monthNumStr}`;
+      if (confirm(`${year}年${parseInt(monthNumStr)}月のスタンプをすべて消去しますか？`)) {
+        localStorage.removeItem(storageKey);
+        generateCalendar();
+      }
+    }
+
+    function downloadImage() {
+      const area = document.getElementById('capture-area');
+      html2canvas(area, {
+        scale: 3, 
+        useCORS: true,
+        backgroundColor: null
+      }).then(canvas => {
+        let link = document.createElement('a'); 
+        const ratio = document.querySelector('input[name="image-ratio"]:checked').value;
+        link.download = `calendar_${ratio}_${document.getElementById('month-input').value}.png`; 
+        link.href = canvas.toDataURL('image/png'); 
+        link.click();
+      });
+    }
+  </script>
+</body>
+</html>
