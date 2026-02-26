@@ -104,7 +104,7 @@
       text-align: center;
     }
 
-    /* ★ 休・満スタンプ：バッジ画像化ズレ完全対策版 */
+    /* ★ 休・✖スタンプ：バッジ画像化ズレ完全対策版 */
     .status.short { 
       transform: none !important; 
       margin-left: 0 !important; 
@@ -159,8 +159,7 @@
       <button class="tool-btn active" onclick="selectTool('custom1')" id="btn-custom1">10:00-14:00</button>
       <button class="tool-btn" onclick="selectTool('custom2')" id="btn-custom2">14:00-18:00</button>
       <button class="tool-btn" onclick="selectTool('close')">休</button>
-      <button class="tool-btn" onclick="selectTool('full')">満</button>
-      <button class="tool-btn" onclick="selectTool('clear')">クリア</button>
+      <button class="tool-btn" onclick="selectTool('full')">✖</button> <button class="tool-btn" onclick="selectTool('clear')">クリア</button>
       <button class="tool-btn" onclick="allClear()" style="background: #fdf2f2; border-color: #f8d7da; color: #dc3545; margin-left: 10px;">全消去</button>
     </div>
   </div>
@@ -408,11 +407,13 @@
           let statusHtml = "";
           if(savedData[dateNum]) {
             savedData[dateNum].forEach(text => {
-              const isShort = (text === '休' || text === '満');
+              // 過去に「満」で保存したデータも「✖」として表示する後方互換性
+              let displayText = text === '満' ? '✖' : text;
+              const isShort = (displayText === '休' || displayText === '✖');
               let exactClass = '';
-              if(text === '休') exactClass = 'status-close';
-              if(text === '満') exactClass = 'status-full';
-              statusHtml += `<span class="status ${isShort ? 'short' : ''} ${exactClass}">${text}</span>`;
+              if(displayText === '休') exactClass = 'status-close';
+              if(displayText === '✖') exactClass = 'status-full';
+              statusHtml += `<span class="status ${isShort ? 'short' : ''} ${exactClass}">${displayText}</span>`;
             });
           }
           cal.innerHTML += `<div class="day" onclick="applyTool(this, ${dateNum})"><span class="date-num">${dateNum}</span><div class="status-container">${statusHtml}</div></div>`; 
@@ -430,21 +431,24 @@
       let currentLines = savedData[dateNum] || [];
       if (currentTool === 'custom1' || currentTool === 'custom2') {
         let newTime = document.getElementById(`btn-${currentTool}`).innerText;
-        if (currentLines.length === 0 || currentLines[0] === '休' || currentLines[0] === '満') { currentLines = [newTime]; } 
+        // 「満」または「✖」がすでにある場合は上書きする
+        if (currentLines.length === 0 || currentLines[0] === '休' || currentLines[0] === '満' || currentLines[0] === '✖') { currentLines = [newTime]; } 
         else if (currentLines.length < 2 && !currentLines.includes(newTime)) { currentLines.push(newTime); }
       } else if (currentTool === 'close') { currentLines = ['休']; } 
-      else if (currentTool === 'full') { currentLines = ['満']; } 
+      else if (currentTool === 'full') { currentLines = ['✖']; } 
       else if (currentTool === 'clear') { currentLines = []; } 
       if(currentLines.length > 0) { savedData[dateNum] = currentLines; } else { delete savedData[dateNum]; }
       localStorage.setItem(storageKey, JSON.stringify(savedData));
       
       let statusHtml = "";
       currentLines.forEach(text => {
-        const isShort = (text === '休' || text === '満');
+        // 表示時にも「満」を「✖」に変換
+        let displayText = text === '満' ? '✖' : text;
+        const isShort = (displayText === '休' || displayText === '✖');
         let exactClass = '';
-        if(text === '休') exactClass = 'status-close';
-        if(text === '満') exactClass = 'status-full';
-        statusHtml += `<span class="status ${isShort ? 'short' : ''} ${exactClass}">${text}</span>`;
+        if(displayText === '休') exactClass = 'status-close';
+        if(displayText === '✖') exactClass = 'status-full';
+        statusHtml += `<span class="status ${isShort ? 'short' : ''} ${exactClass}">${displayText}</span>`;
       });
       container.innerHTML = statusHtml;
     }
